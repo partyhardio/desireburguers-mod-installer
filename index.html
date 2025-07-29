@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Desiré's Mod Installer</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background-color: #1e1e1e;
+      color: white;
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      background: #2e2e2e;
+      color: white;
+      border: 1px solid #444;
+    }
+
+    button {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      background: #ff69b4;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>💾 Desiré's Mod Installer</h1>
+
+
+  <select id="modSelect">
+    <option value="" disabled selected>Select a mod to install</option>
+  </select>
+  <input type="text" id="installPath" readonly />
+
+  <button id="installMods">Install Mod</button>
+
+  <p id="status"></p>
+
+  <script>
+    const { ipcRenderer } = window.electronAPI;
+    let defaultPath
+
+    const pathInput = document.getElementById("installPath");
+    const statusText = document.getElementById("status");
+    const modSelect = document.getElementById("modSelect");
+
+    window.electronAPI.getModList().then((mods) => {
+      console.log("Available mods:", mods);
+      mods.forEach((mod) => {
+        const option = document.createElement("option");
+        option.value = mod.installPath;
+        option.textContent = mod.name;
+        modSelect.appendChild(option);
+      });
+
+      modSelect.addEventListener("change", async (event) => {
+        const installPath = event.target.value;
+        console.log("Selected mod:", event.target.value);
+        if (installPath) {
+          pathInput.value = `${defaultPath}\\${installPath}`;
+
+        }
+      });
+    });
+    window.electronAPI.getDefaultModPath().then((_defaultPath) => {
+      defaultPath = _defaultPath;
+    });
+    document.getElementById("installMods").addEventListener("click", async () => {
+      const installPath = modSelect.value;
+      if (!installPath) {
+        statusText.style.color = "red";
+        statusText.textContent = "❌ Error: No mod selected.";
+        return;
+      }
+      const result = await window.electronAPI.copyAssetsToPath(installPath);
+      statusText.style.color = result.success ? "green" : "red";
+      statusText.textContent = "Installing mods...";
+      statusText.textContent = result.success
+        ? "✅ Mods installed successfully!"
+        : `❌ Error: ${result.error}`;
+    });
+  </script>
+</body>
+
+</html>
